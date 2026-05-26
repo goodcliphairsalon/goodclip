@@ -356,7 +356,42 @@ async function submitBooking() {
   } catch(e) {
     // no-cors: cannot read response, proceed anyway
   }
+async function submitBooking() {
+  const btn = document.getElementById("btn-confirm");
+  btn.disabled = true;
+  btn.textContent = "Submitting…";
 
+  const svcs = getSelected();
+  const params = new URLSearchParams({
+    action:   "book",
+    date:     fmtDate(S.date),
+    time:     S.time,
+    duration: String(getTotalDur()),
+    services: svcs.map(s => s.name).join(", "),
+    stylist:  CFG.stylist,
+    name:     S.customer.name,
+    phone:    S.customer.phone,
+    email:    S.customer.email || "",
+    notes:    S.customer.notes || "",
+    total:    String(svcs.reduce((t, s) => t + s.base, 0)),
+  });
+
+  try {
+    const r    = await fetch(CFG.SCRIPT_URL + "?" + params.toString());
+    const data = await r.json();
+    if (data.success) {
+      showSuccess();
+    } else {
+      alert(data.message || "Time slot unavailable. Please choose another.");
+      btn.disabled = false;
+      btn.textContent = "✓ Confirm Booking";
+    }
+  } catch(e) {
+    alert("Connection error. Please try again.");
+    btn.disabled = false;
+    btn.textContent = "✓ Confirm Booking";
+  }
+}
   showSuccess();
 }
 function showSuccess() {
