@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GoodClip Hair Salon – Book Appointment</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+
+    <header class="header">
+      <div class="logo">✂ GoodClip Hair</div>
+      <p class="tagline">Book Your Appointment</p>
+      <p class="hours">Tue – Sat &nbsp;|&nbsp; 10:00 AM – 7:00 PM</p>
+    </header>
+
+    <!-- Progress indicator -->
+    <div class="steps">
+      <div class="step active" id="step-1"><div class="step-num">1</div><span>Services</span></div>
+      <div class="step-line" id="line-1"></div>
+      <div class="step" id="step-2"><div class="step-num">2</div><span>Date &amp; Time</span></div>
+      <div class="step-line" id="line-2"></div>
+      <div class="step" id="step-3"><div class="step-num">3</div><span>Your Info</span></div>
+      <div class="step-line" id="line-3"></div>
+      <div class="step" id="step-4"><div class="step-num">4</div><span>Confirm</span></div>
+    </div>
+
+    <!-- PANEL 1 – Services -->
+    <div class="panel active" id="panel-1">
+      <h2>Select Services</h2>
+      <div id="services-container"></div>
+      <div class="summary-bar" id="service-summary"></div>
+      <button class="btn-primary" id="btn-step1" disabled onclick="goToStep(2)">Continue →</button>
+    </div>
+
+    <!-- PANEL 2 – Date & Time -->
+    <div class="panel" id="panel-2">
+      <h2>Select Date &amp; Time</h2>
+      <div class="date-picker">
+        <div class="month-nav">
+          <button onclick="prevMonth()">&#8249;</button>
+          <span id="month-label"></span>
+          <button onclick="nextMonth()">&#8250;</button>
+        </div>
+        <div class="calendar" id="calendar"></div>
+      </div>
+      <div id="time-slots-section" style="display:none">
+        <h3 class="slots-title">Available Times <span id="selected-date-label"></span></h3>
+        <div class="time-slots" id="time-slots"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="goToStep(1)">← Back</button>
+        <button class="btn-primary" id="btn-step2" disabled onclick="goToStep(3)">Continue →</button>
+      </div>
+    </div>
+
+    <!-- PANEL 3 – Customer Info -->
+    <div class="panel" id="panel-3">
+      <h2>Your Information</h2>
+      <div class="form-group">
+        <label for="inp-name">Full Name <span class="req">*</span></label>
+        <input id="inp-name" type="text" placeholder="Your name" autocomplete="name">
+      </div>
+      <div class="form-group">
+        <label for="inp-phone">Phone Number <span class="req">*</span></label>
+        <input id="inp-phone" type="tel" placeholder="(xxx) xxx-xxxx" autocomplete="tel">
+      </div>
+      <div class="form-group">
+        <label for="inp-email">Email <span class="opt">(for confirmation)</span></label>
+        <input id="inp-email" type="email" placeholder="your@email.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label for="inp-notes">Notes <span class="opt">(optional)</span></label>
+        <textarea id="inp-notes" placeholder="Any special requests…"></textarea>
+      </div>
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="goToStep(2)">← Back</button>
+        <button class="btn-primary" onclick="goToStep(4)">Review →</button>
+      </div>
+    </div>
+
+    <!-- PANEL 4 – Review & Confirm -->
+    <div class="panel" id="panel-4">
+      <h2>Review &amp; Confirm</h2>
+      <div class="booking-summary" id="booking-summary"></div>
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="goToStep(3)">← Back</button>
+        <button class="btn-confirm" id="btn-confirm" onclick="submitBooking()">✓ Confirm Booking</button>
+      </div>
+    </div>
+
+    <!-- PANEL SUCCESS -->
+    <div class="panel" id="panel-success">
+      <div class="success-icon">✓</div>
+      <h2 style="color:#2e7d32;text-align:center">Booking Confirmed!</h2>
+      <p style="text-align:center;color:var(--text-light);margin-bottom:20px">We'll see you soon at GoodClip Hair!</p>
+      <div class="booking-summary" id="success-details"></div>
+      <button class="btn-primary" style="margin-top:24px" onclick="resetForm()">Book Another Appointment</button>
+    </div>
+
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
