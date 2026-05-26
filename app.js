@@ -351,11 +351,6 @@ async function submitBooking() {
     total:    String(svcs.reduce((t, s) => t + s.base, 0)),
   });
 
-  try {
-    await fetch(CFG.SCRIPT_URL + "?" + params.toString(), { mode: "no-cors" });
-  } catch(e) {
-    // no-cors: cannot read response, proceed anyway
-  }
 async function submitBooking() {
   const btn = document.getElementById("btn-confirm");
   btn.disabled = true;
