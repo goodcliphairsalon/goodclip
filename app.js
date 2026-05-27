@@ -2,7 +2,7 @@
 //  CONFIG
 // ─────────────────────────────────────────
 const CFG = {
-  SCRIPT_URL: "https://script.google.com/macros/s/AKfycbxXlb8DcV8BO_COFSWDQNPDglJOoArQdYi3qftAEklfmsYW48l1ccGNkJ6RCuoKTliL/exec",
+  SCRIPT_URL: "https://script.google.com/macros/s/AKfycbyurdFOpOP6D8LGxM-Pdtd5EJBtyI85XpeMfyAfX8zTyftB0sIzArTufAkccExbdBcH/exec",
   stylist:    "Hanh Dao",
   openDays:   [1, 2, 3, 4, 5, 6],   // Mon–Sat (0=Sun,1=Mon…6=Sat)
   openHour:   10,
