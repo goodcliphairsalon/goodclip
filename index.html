@@ -15,7 +15,6 @@
       <p class="hours">Mon – Sat &nbsp;|&nbsp; 10:00 AM – 7:00 PM</p>
     </header>
 
-    <!-- Progress indicator -->
     <div class="steps">
       <div class="step active" id="step-1"><div class="step-num">1</div><span>Services</span></div>
       <div class="step-line" id="line-1"></div>
@@ -26,7 +25,6 @@
       <div class="step" id="step-4"><div class="step-num">4</div><span>Confirm</span></div>
     </div>
 
-    <!-- PANEL 1 – Services -->
     <div class="panel active" id="panel-1">
       <h2>Select Services</h2>
       <div id="services-container"></div>
@@ -34,7 +32,6 @@
       <button class="btn-primary" id="btn-step1" disabled onclick="goToStep(2)">Continue →</button>
     </div>
 
-    <!-- PANEL 2 – Date & Time -->
     <div class="panel" id="panel-2">
       <h2>Select Date &amp; Time</h2>
       <div class="date-picker">
@@ -55,7 +52,6 @@
       </div>
     </div>
 
-    <!-- PANEL 3 – Customer Info -->
     <div class="panel" id="panel-3">
       <h2>Your Information</h2>
       <div class="form-group">
@@ -80,7 +76,6 @@
       </div>
     </div>
 
-    <!-- PANEL 4 – Review & Confirm -->
     <div class="panel" id="panel-4">
       <h2>Review &amp; Confirm</h2>
       <div class="booking-summary" id="booking-summary"></div>
@@ -90,13 +85,27 @@
       </div>
     </div>
 
-    <!-- PANEL SUCCESS -->
     <div class="panel" id="panel-success">
       <div class="success-icon">✓</div>
       <h2 style="color:#2e7d32;text-align:center">Booking Confirmed!</h2>
       <p style="text-align:center;color:var(--text-light);margin-bottom:20px">We'll see you soon at GoodClip Hair!</p>
       <div class="booking-summary" id="success-details"></div>
       <button class="btn-primary" style="margin-top:24px" onclick="resetForm()">Book Another Appointment</button>
+    </div>
+
+    <!-- PANEL DECLINE (salon only) -->
+    <div class="panel" id="panel-decline">
+      <div class="success-icon" style="background:#e65100">✕</div>
+      <h2 style="color:#e65100;text-align:center">Decline Booking?</h2>
+      <p style="text-align:center;color:var(--text-light);margin-bottom:8px">
+        The customer will be notified that their booking cannot be accommodated. The time slot will be released.
+      </p>
+      <p id="decline-ref-display" style="text-align:center;font-size:.8rem;color:#bbb;margin-bottom:28px"></p>
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="location.href=location.pathname">← Go Back</button>
+        <button class="btn-confirm" id="btn-do-decline" style="background:#e65100;border-color:#e65100"
+                onclick="performDecline()">✕ Yes, Decline</button>
+      </div>
     </div>
 
     <!-- PANEL CANCEL -->
