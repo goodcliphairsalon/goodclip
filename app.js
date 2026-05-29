@@ -65,13 +65,21 @@ let calYear, calMonth;
 document.addEventListener("DOMContentLoaded", () => {
   // Check if opened from a cancel link  (?cancel=GC-xxx)
   const params   = new URLSearchParams(window.location.search);
-  const cancelId = params.get("cancel");
-  if (cancelId) {
+  const cancelId  = params.get("cancel");
+  const declineId = params.get("decline");
+
+  if (cancelId || declineId) {
     document.querySelector(".steps").style.display = "none";
     document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
-    document.getElementById("panel-cancel").classList.add("active");
-    document.getElementById("cancel-ref-display").textContent = "Booking ref: " + cancelId;
-    window._cancelId = cancelId;
+    if (declineId) {
+      document.getElementById("panel-decline").classList.add("active");
+      document.getElementById("decline-ref-display").textContent = "Booking ref: " + declineId;
+      window._declineId = declineId;
+    } else {
+      document.getElementById("panel-cancel").classList.add("active");
+      document.getElementById("cancel-ref-display").textContent = "Booking ref: " + cancelId;
+      window._cancelId = cancelId;
+    }
     return;
   }
 
@@ -388,10 +396,14 @@ function goToStep(n) {
   if (n === 4) {
     const name  = document.getElementById("inp-name").value.trim();
     const phone = document.getElementById("inp-phone").value.trim();
+    const email = document.getElementById("inp-email").value.trim();
     if (!name || !phone) { alert("Please enter your name and phone number."); return; }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      alert("Please enter a valid email address (e.g. name@gmail.com), or leave it blank.");
+      return;
+    }
     S.customer = {
-      name, phone,
-      email: document.getElementById("inp-email").value.trim(),
+      name, phone, email,
       notes: document.getElementById("inp-notes").value.trim(),
     };
     renderReview();
@@ -473,6 +485,38 @@ function showSuccess() {
     s.classList.remove("active"); s.classList.add("done");
   }
   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+// ─────────────────────────────────────────
+//  DECLINE (salon only — from email link)
+// ─────────────────────────────────────────
+async function performDecline() {
+  const bookingId = window._declineId;
+  const btn = document.getElementById("btn-do-decline");
+  btn.disabled = true;
+  btn.textContent = "Processing…";
+
+  try {
+    const r    = await fetch(`${CFG.SCRIPT_URL}?action=decline&bookingId=${encodeURIComponent(bookingId)}`);
+    const data = await r.json();
+
+    if (data.success) {
+      document.getElementById("panel-decline").innerHTML = `
+        <div class="success-icon">✓</div>
+        <h2 style="color:#2e7d32;text-align:center">Booking Declined</h2>
+        <p style="text-align:center;color:var(--text-light);margin-bottom:20px">
+          The customer has been notified.<br>The time slot is now available for other bookings.
+        </p>`;
+    } else {
+      alert(data.message || "Unable to decline. Please try again.");
+      btn.disabled = false;
+      btn.textContent = "✕ Yes, Decline";
+    }
+  } catch (e) {
+    alert("Connection error. Please try again.");
+    btn.disabled = false;
+    btn.textContent = "✕ Yes, Decline";
+  }
 }
 
 // ─────────────────────────────────────────
