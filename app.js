@@ -8,6 +8,16 @@ const CFG = {
   openHour:   10,
   closeHour:  19,                    // 7 PM
   slotMin:    15,
+  // Schedule optimization:
+  //   "regular"  – show all 15-min slots (may leave gaps)
+  //   "reduce"   – hide slots that create small unusable gaps
+  //   "eliminate"– only show slots at the edge of free blocks (fewest gaps)
+  optimization: "reduce",
+
+  // Online availability
+  minBookAheadHours:  2,    // must book at least X hours before start (0 = immediately)
+  maxBookAheadMonths: 3,    // can only book within X months from today
+  cancelCutoffHours:  2,    // must cancel at least X hours before (0 = anytime)
 };
 
 // ─────────────────────────────────────────
@@ -146,7 +156,10 @@ function renderCalendar() {
     cal.appendChild(h);
   });
 
-  const today    = new Date(); today.setHours(0,0,0,0);
+  const today   = new Date(); today.setHours(0,0,0,0);
+  const maxDate = new Date(today);
+  maxDate.setMonth(maxDate.getMonth() + CFG.maxBookAheadMonths);
+
   const firstDow = new Date(calYear, calMonth, 1).getDay();
   const daysInMo = new Date(calYear, calMonth + 1, 0).getDate();
 
@@ -157,10 +170,12 @@ function renderCalendar() {
   }
 
   for (let d = 1; d <= daysInMo; d++) {
-    const date = new Date(calYear, calMonth, d);
-    const dow  = date.getDay();
-    const past = date < today;
-    const open = CFG.openDays.includes(dow);
+    const date    = new Date(calYear, calMonth, d);
+    const dow     = date.getDay();
+    const past    = date < today;
+    const tooFar  = date > maxDate;
+    const open    = CFG.openDays.includes(dow);
+    const avail   = !past && !tooFar && open;
 
     const isToday    = date.getTime() === today.getTime();
     const isSelected = S.date &&
@@ -172,13 +187,14 @@ function renderCalendar() {
     el.textContent = d;
 
     let cls = "cal-day";
-    if      (isSelected)    cls += " selected";
-    else if (past || !open) cls += past ? " past" : " closed";
-    else                    cls += " available";
+    if      (isSelected)  cls += " selected";
+    else if (past)        cls += " past";
+    else if (!open || tooFar) cls += " closed";
+    else                  cls += " available";
     if (isToday && !isSelected) cls += " today";
 
     el.className = cls;
-    if (!past && open) el.addEventListener("click", () => pickDate(new Date(calYear, calMonth, d)));
+    if (avail) el.addEventListener("click", () => pickDate(new Date(calYear, calMonth, d)));
     cal.appendChild(el);
   }
 }
@@ -218,7 +234,7 @@ function buildSlots() {
   wrap.innerHTML = "";
 
   if (!slots.length) {
-    wrap.innerHTML = `<p style="color:var(--text-light);font-size:.88rem">No available times.</p>`;
+    wrap.innerHTML = `<p style="color:var(--text-light);font-size:.88rem">No available times for this date.</p>`;
     return;
   }
 
@@ -226,37 +242,98 @@ function buildSlots() {
     const el = document.createElement("div");
     el.className = "slot";
     el.textContent = label;
-
-    if (S.bookedSlots.includes(val)) {
-      el.classList.add("booked");
-    } else {
-      if (S.time === val) el.classList.add("selected");
-      el.addEventListener("click", () => {
-        S.time = val;
-        buildSlots();
-        document.getElementById("btn-step2").disabled = false;
-      });
-    }
+    if (S.time === val) el.classList.add("selected");
+    el.addEventListener("click", () => {
+      S.time = val;
+      buildSlots();
+      document.getElementById("btn-step2").disabled = false;
+    });
     wrap.appendChild(el);
   });
 }
 
 function genSlots(totalDur) {
-  const slots = [];
-  const start = CFG.openHour * 60;
-  const end   = CFG.closeHour * 60 - totalDur;
+  const openMin   = CFG.openHour * 60;
+  const closeMin  = CFG.closeHour * 60;
+  const bookedSet = new Set(S.bookedSlots);
+  const opt       = CFG.optimization || "reduce";
 
-  for (let m = start; m <= end; m += CFG.slotMin) {
+  // Earliest bookable minute today (enforces minBookAheadHours)
+  let cutoffMin = 0;
+  if (S.date) {
+    const now = new Date();
+    const selDate = new Date(S.date); selDate.setHours(0,0,0,0);
+    const todayDate = new Date(); todayDate.setHours(0,0,0,0);
+    if (selDate.getTime() === todayDate.getTime()) {
+      cutoffMin = now.getHours() * 60 + now.getMinutes() + CFG.minBookAheadHours * 60;
+    }
+  }
+
+  // True if service starting at startMin doesn't overlap any booked segment
+  function fits(startMin) {
+    if (startMin < cutoffMin) return false;          // too soon
+    if (startMin + totalDur > closeMin) return false;
+    for (let m = startMin; m < startMin + totalDur; m += 15) {
+      if (bookedSet.has(pad(Math.floor(m/60)) + ":" + pad(m%60))) return false;
+    }
+    return true;
+  }
+
+  // Contiguous free blocks (in minutes): [[blockStart, blockEnd], ...]
+  function freeBlocks() {
+    const blocks = [];
+    let bs = null;
+    for (let m = openMin; m < closeMin; m += 15) {
+      const key  = pad(Math.floor(m/60)) + ":" + pad(m%60);
+      const free = !bookedSet.has(key);
+      if ( free && bs === null) bs = m;
+      if (!free && bs !== null) { blocks.push([bs, m]); bs = null; }
+    }
+    if (bs !== null) blocks.push([bs, closeMin]);
+    return blocks;
+  }
+
+  function makeSlot(m) {
     const h   = Math.floor(m / 60);
     const min = m % 60;
     const per = h < 12 ? "AM" : "PM";
     const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-    slots.push({
-      label: `${h12}:${pad(min)} ${per}`,
-      val:   `${pad(h)}:${pad(min)}`,
-    });
+    return { label: `${h12}:${pad(min)} ${per}`, val: `${pad(h)}:${pad(min)}` };
   }
-  return slots;
+
+  const result = [];
+  const seen   = new Set();
+  const add    = m => { if (!seen.has(m) && fits(m)) { result.push(makeSlot(m)); seen.add(m); } };
+
+  if (opt === "regular") {
+    // All 15-min slots — no gap logic
+    for (let m = openMin; m <= closeMin - totalDur; m += CFG.slotMin) add(m);
+
+  } else if (opt === "eliminate") {
+    // Only slot at start and slot that ends exactly at end of each free block
+    for (const [bs, be] of freeBlocks()) {
+      if (be - bs < totalDur) continue;
+      add(bs);
+      add(be - totalDur);
+    }
+    result.sort((a, b) => a.val.localeCompare(b.val));
+
+  } else {
+    // "reduce" — skip slots that leave gaps smaller than minGap minutes
+    const minGap = 30;
+    for (const [bs, be] of freeBlocks()) {
+      if (be - bs < totalDur) continue;
+      for (let m = bs; m <= be - totalDur; m += CFG.slotMin) {
+        const gapBefore = m - bs;
+        const gapAfter  = be - (m + totalDur);
+        if ((gapBefore === 0 || gapBefore >= minGap) &&
+            (gapAfter  === 0 || gapAfter  >= minGap)) add(m);
+      }
+    }
+    result.sort((a, b) => a.val.localeCompare(b.val));
+  }
+
+  return result;
 }
 
 function prevMonth() {
