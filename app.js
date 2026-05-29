@@ -53,6 +53,18 @@ let calYear, calMonth;
 //  BOOT
 // ─────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
+  // Check if opened from a cancel link  (?cancel=GC-xxx)
+  const params   = new URLSearchParams(window.location.search);
+  const cancelId = params.get("cancel");
+  if (cancelId) {
+    document.querySelector(".steps").style.display = "none";
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+    document.getElementById("panel-cancel").classList.add("active");
+    document.getElementById("cancel-ref-display").textContent = "Booking ref: " + cancelId;
+    window._cancelId = cancelId;
+    return;
+  }
+
   const now = new Date();
   calYear   = now.getFullYear();
   calMonth  = now.getMonth();
@@ -384,6 +396,41 @@ function showSuccess() {
     s.classList.remove("active"); s.classList.add("done");
   }
   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+// ─────────────────────────────────────────
+//  CANCEL (from email link)
+// ─────────────────────────────────────────
+async function performCancel() {
+  const bookingId = window._cancelId;
+  const btn = document.getElementById("btn-do-cancel");
+  btn.disabled = true;
+  btn.textContent = "Cancelling…";
+
+  try {
+    const r    = await fetch(`${CFG.SCRIPT_URL}?action=cancel&bookingId=${encodeURIComponent(bookingId)}`);
+    const data = await r.json();
+
+    if (data.success) {
+      document.getElementById("panel-cancel").innerHTML = `
+        <div class="success-icon">✓</div>
+        <h2 style="color:#2e7d32;text-align:center">Appointment Cancelled</h2>
+        <p style="text-align:center;color:var(--text-light);margin-bottom:20px">
+          Your appointment has been cancelled. A confirmation email has been sent.
+        </p>
+        <button class="btn-primary" onclick="location.href=location.pathname">
+          Book New Appointment
+        </button>`;
+    } else {
+      alert(data.message || "Unable to cancel. Please call us.");
+      btn.disabled = false;
+      btn.textContent = "Yes, Cancel";
+    }
+  } catch (e) {
+    alert("Connection error. Please try again.");
+    btn.disabled = false;
+    btn.textContent = "Yes, Cancel";
+  }
 }
 
 function resetForm() {
