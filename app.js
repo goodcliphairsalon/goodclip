@@ -451,8 +451,11 @@ async function submitBooking() {
     total:    String(svcs.reduce((t, s) => t + s.base, 0)),
   });
 
+  const ctrl    = new AbortController();
+  const timeout = setTimeout(() => ctrl.abort(), 30000);
   try {
-    const r    = await fetch(CFG.SCRIPT_URL + "?" + params.toString());
+    const r    = await fetch(CFG.SCRIPT_URL + "?" + params.toString(), { signal: ctrl.signal });
+    clearTimeout(timeout);
     const data = await r.json();
     if (data.success) {
       showSuccess();
@@ -462,7 +465,10 @@ async function submitBooking() {
       btn.textContent = "✓ Confirm Booking";
     }
   } catch(e) {
-    alert("Connection error. Please try again.");
+    clearTimeout(timeout);
+    alert(e.name === "AbortError"
+      ? "Request timed out. Please check your connection and try again."
+      : "Connection error. Please try again.");
     btn.disabled = false;
     btn.textContent = "✓ Confirm Booking";
   }
