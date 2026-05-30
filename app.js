@@ -63,18 +63,23 @@ let calYear, calMonth;
 //  BOOT
 // ─────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
-  // Check if opened from a cancel link  (?cancel=GC-xxx)
-  const params   = new URLSearchParams(window.location.search);
-  const cancelId  = params.get("cancel");
-  const declineId = params.get("decline");
+  const params     = new URLSearchParams(window.location.search);
+  const cancelId   = params.get("cancel");
+  const declineId  = params.get("decline");
+  const rescheduleId = params.get("reschedule");
 
-  if (cancelId || declineId) {
+  if (cancelId || declineId || rescheduleId) {
     document.querySelector(".steps").style.display = "none";
     document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+
     if (declineId) {
       document.getElementById("panel-decline").classList.add("active");
       document.getElementById("decline-ref-display").textContent = "Booking ref: " + declineId;
       window._declineId = declineId;
+    } else if (rescheduleId) {
+      document.getElementById("panel-reschedule").classList.add("active");
+      window._rescheduleId = rescheduleId;
+      loadReschedule(rescheduleId);
     } else {
       document.getElementById("panel-cancel").classList.add("active");
       document.getElementById("cancel-ref-display").textContent = "Booking ref: " + cancelId;
@@ -279,7 +284,7 @@ function genSlots(totalDur) {
 
   // True if service starting at startMin doesn't overlap any booked segment
   function fits(startMin) {
-    if (startMin < cutoffMin) return false;          // too soon
+    if (startMin < cutoffMin) return false;
     if (startMin + totalDur > closeMin) return false;
     for (let m = startMin; m < startMin + totalDur; m += 15) {
       if (bookedSet.has(pad(Math.floor(m/60)) + ":" + pad(m%60))) return false;
@@ -314,11 +319,9 @@ function genSlots(totalDur) {
   const add    = m => { if (!seen.has(m) && fits(m)) { result.push(makeSlot(m)); seen.add(m); } };
 
   if (opt === "regular") {
-    // All 15-min slots — no gap logic
     for (let m = openMin; m <= closeMin - totalDur; m += CFG.slotMin) add(m);
 
   } else if (opt === "eliminate") {
-    // Only slot at start and slot that ends exactly at end of each free block
     for (const [bs, be] of freeBlocks()) {
       if (be - bs < totalDur) continue;
       add(bs);
@@ -554,6 +557,219 @@ async function performCancel() {
   }
 }
 
+// ─────────────────────────────────────────
+//  RESCHEDULE (from email link)
+// ─────────────────────────────────────────
+let rCalYear, rCalMonth, rDate = null, rTime = null;
+
+async function loadReschedule(bookingId) {
+  const currentDiv = document.getElementById("reschedule-current");
+  currentDiv.innerHTML = `<p style="text-align:center;color:var(--text-light);font-size:.9rem">Loading…</p>`;
+
+  try {
+    const r    = await fetch(`${CFG.SCRIPT_URL}?action=getBooking&bookingId=${encodeURIComponent(bookingId)}`);
+    const data = await r.json();
+
+    if (!data.success) {
+      currentDiv.innerHTML = `<p style="text-align:center;color:#c62828">${data.message || "Booking not found."}</p>`;
+      document.getElementById("reschedule-picker").style.display = "none";
+      return;
+    }
+
+    if (data.status === "CANCELLED" || data.status === "DECLINED") {
+      currentDiv.innerHTML = `<p style="text-align:center;color:#c62828">This booking has been ${data.status.toLowerCase()} and cannot be rescheduled.</p>`;
+      document.getElementById("reschedule-picker").style.display = "none";
+      return;
+    }
+
+    window._rescheduleBooking = data;
+
+    currentDiv.innerHTML = `
+      <p style="font-size:.78rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-light);margin-bottom:10px">Current Appointment</p>
+      ${row("Date",     data.date)}
+      ${row("Time",     fmtTime(data.time))}
+      ${row("Stylist",  data.stylist)}
+      ${row("Services", data.services)}`;
+
+    const now = new Date();
+    rCalYear  = now.getFullYear();
+    rCalMonth = now.getMonth();
+    renderRCalendar();
+
+  } catch(e) {
+    currentDiv.innerHTML = `<p style="text-align:center;color:#c62828">Connection error. Please try again.</p>`;
+  }
+}
+
+function renderRCalendar() {
+  document.getElementById("r-month-label").textContent = `${MONTHS[rCalMonth]} ${rCalYear}`;
+  const cal = document.getElementById("r-calendar");
+  cal.innerHTML = "";
+
+  DAYS.forEach(d => {
+    const h = document.createElement("div");
+    h.className = "cal-hdr";
+    h.textContent = d;
+    cal.appendChild(h);
+  });
+
+  const today   = new Date(); today.setHours(0,0,0,0);
+  const maxDate = new Date(today);
+  maxDate.setMonth(maxDate.getMonth() + CFG.maxBookAheadMonths);
+
+  const firstDow = new Date(rCalYear, rCalMonth, 1).getDay();
+  const daysInMo = new Date(rCalYear, rCalMonth + 1, 0).getDate();
+
+  for (let i = 0; i < firstDow; i++) {
+    const e = document.createElement("div");
+    e.className = "cal-day empty";
+    cal.appendChild(e);
+  }
+
+  for (let d = 1; d <= daysInMo; d++) {
+    const date   = new Date(rCalYear, rCalMonth, d);
+    const dow    = date.getDay();
+    const past   = date < today;
+    const tooFar = date > maxDate;
+    const open   = CFG.openDays.includes(dow);
+    const avail  = !past && !tooFar && open;
+
+    const isToday    = date.getTime() === today.getTime();
+    const isSelected = rDate &&
+      rDate.getFullYear() === rCalYear &&
+      rDate.getMonth()    === rCalMonth &&
+      rDate.getDate()     === d;
+
+    const el = document.createElement("div");
+    el.textContent = d;
+
+    let cls = "cal-day";
+    if      (isSelected) cls += " selected";
+    else if (past)       cls += " past";
+    else if (!open || tooFar) cls += " closed";
+    else                 cls += " available";
+    if (isToday && !isSelected) cls += " today";
+
+    el.className = cls;
+    if (avail) el.addEventListener("click", () => rPickDate(new Date(rCalYear, rCalMonth, d)));
+    cal.appendChild(el);
+  }
+}
+
+function rPickDate(date) {
+  rDate = date;
+  rTime = null;
+  document.getElementById("btn-do-reschedule").disabled = true;
+  renderRCalendar();
+  rFetchSlots(date);
+}
+
+async function rFetchSlots(date) {
+  const sec  = document.getElementById("r-time-slots-section");
+  const wrap = document.getElementById("r-time-slots");
+  sec.style.display = "block";
+  wrap.innerHTML = `<div class="slots-loading">Loading times…</div>`;
+
+  document.getElementById("r-selected-date-label").textContent =
+    `— ${DAYS[date.getDay()]}, ${MONTHS[date.getMonth()]} ${date.getDate()}`;
+
+  try {
+    const r    = await fetch(`${CFG.SCRIPT_URL}?action=slots&date=${fmtDate(date)}&excludeId=${encodeURIComponent(window._rescheduleId)}`);
+    const data = await r.json();
+    S.bookedSlots = data.booked || [];
+  } catch {
+    S.bookedSlots = [];
+  }
+
+  const bk       = window._rescheduleBooking;
+  const totalDur = Number(bk.duration);
+  const savedDate = S.date;
+  S.date = date;
+
+  const slots = genSlots(totalDur);
+  wrap.innerHTML = "";
+
+  if (!slots.length) {
+    wrap.innerHTML = `<p style="color:var(--text-light);font-size:.88rem">No available times for this date.</p>`;
+    S.date = savedDate;
+    return;
+  }
+
+  slots.forEach(({ label, val }) => {
+    const el = document.createElement("div");
+    el.className = "slot";
+    el.textContent = label;
+    if (rTime === val) el.classList.add("selected");
+    el.addEventListener("click", () => {
+      rTime = val;
+      rFetchSlots(rDate);
+      document.getElementById("btn-do-reschedule").disabled = false;
+    });
+    wrap.appendChild(el);
+  });
+
+  S.date = savedDate;
+}
+
+function rPrevMonth() {
+  rCalMonth--; if (rCalMonth < 0) { rCalMonth = 11; rCalYear--; }
+  rDate = null; rTime = null;
+  renderRCalendar();
+  document.getElementById("r-time-slots-section").style.display = "none";
+  document.getElementById("btn-do-reschedule").disabled = true;
+}
+
+function rNextMonth() {
+  rCalMonth++; if (rCalMonth > 11) { rCalMonth = 0; rCalYear++; }
+  rDate = null; rTime = null;
+  renderRCalendar();
+  document.getElementById("r-time-slots-section").style.display = "none";
+  document.getElementById("btn-do-reschedule").disabled = true;
+}
+
+async function submitReschedule() {
+  const btn = document.getElementById("btn-do-reschedule");
+  btn.disabled = true;
+  btn.textContent = "Rescheduling…";
+
+  const params = new URLSearchParams({
+    action:    "reschedule",
+    bookingId: window._rescheduleId,
+    date:      fmtDate(rDate),
+    time:      rTime,
+  });
+
+  try {
+    const r    = await fetch(`${CFG.SCRIPT_URL}?${params}`);
+    const data = await r.json();
+
+    if (data.success) {
+      document.getElementById("panel-reschedule").innerHTML = `
+        <div class="success-icon" style="background:#e65100;font-size:1.5rem">🔄</div>
+        <h2 style="color:#e65100;text-align:center">Appointment Rescheduled!</h2>
+        <p style="text-align:center;color:var(--text-light);margin:12px 0 24px">
+          Your new appointment is confirmed for<br>
+          <strong>${fmtDateLabel(rDate)}</strong> at <strong>${fmtTime(rTime)}</strong>.<br>
+          A confirmation email has been sent.
+        </p>
+        <button class="btn-primary" onclick="location.href=location.pathname">
+          Book Another Appointment
+        </button>`;
+    } else {
+      alert(data.message || "Unable to reschedule. Please try again.");
+      btn.disabled = false;
+      btn.textContent = "🔄 Confirm Reschedule";
+    }
+  } catch(e) {
+    alert("Connection error. Please try again.");
+    btn.disabled = false;
+    btn.textContent = "🔄 Confirm Reschedule";
+  }
+}
+
+// ─────────────────────────────────────────
+//  RESET
+// ─────────────────────────────────────────
 function resetForm() {
   S = { selected: new Set(), date: null, time: null, bookedSlots: [], customer: {} };
   ["inp-name","inp-phone","inp-email","inp-notes"].forEach(id => {
