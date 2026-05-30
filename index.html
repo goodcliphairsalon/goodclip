@@ -15,6 +15,7 @@
       <p class="hours">Mon – Sat &nbsp;|&nbsp; 10:00 AM – 7:00 PM</p>
     </header>
 
+    <!-- Progress indicator -->
     <div class="steps">
       <div class="step active" id="step-1"><div class="step-num">1</div><span>Services</span></div>
       <div class="step-line" id="line-1"></div>
@@ -25,6 +26,7 @@
       <div class="step" id="step-4"><div class="step-num">4</div><span>Confirm</span></div>
     </div>
 
+    <!-- PANEL 1 – Services -->
     <div class="panel active" id="panel-1">
       <h2>Select Services</h2>
       <div id="services-container"></div>
@@ -32,6 +34,7 @@
       <button class="btn-primary" id="btn-step1" disabled onclick="goToStep(2)">Continue →</button>
     </div>
 
+    <!-- PANEL 2 – Date & Time -->
     <div class="panel" id="panel-2">
       <h2>Select Date &amp; Time</h2>
       <div class="date-picker">
@@ -52,6 +55,7 @@
       </div>
     </div>
 
+    <!-- PANEL 3 – Customer Info -->
     <div class="panel" id="panel-3">
       <h2>Your Information</h2>
       <div class="form-group">
@@ -76,6 +80,7 @@
       </div>
     </div>
 
+    <!-- PANEL 4 – Review & Confirm -->
     <div class="panel" id="panel-4">
       <h2>Review &amp; Confirm</h2>
       <div class="booking-summary" id="booking-summary"></div>
@@ -85,6 +90,7 @@
       </div>
     </div>
 
+    <!-- PANEL SUCCESS -->
     <div class="panel" id="panel-success">
       <div class="success-icon">✓</div>
       <h2 style="color:#2e7d32;text-align:center">Booking Confirmed!</h2>
@@ -120,6 +126,40 @@
         <button class="btn-secondary" onclick="location.href=location.pathname">← Keep It</button>
         <button class="btn-confirm" id="btn-do-cancel" style="background:#c62828;border-color:#c62828"
                 onclick="performCancel()">Yes, Cancel</button>
+      </div>
+    </div>
+
+    <!-- PANEL RESCHEDULE -->
+    <div class="panel" id="panel-reschedule">
+      <div class="success-icon" style="background:#e65100;font-size:1.5rem">🔄</div>
+      <h2 style="color:#e65100;text-align:center">Reschedule Appointment</h2>
+
+      <!-- Current booking info -->
+      <div class="booking-summary" id="reschedule-current" style="margin-bottom:22px"></div>
+
+      <!-- Picker: new date & time -->
+      <div id="reschedule-picker">
+        <h3 style="font-size:1rem;font-weight:700;color:var(--primary);margin-bottom:14px">
+          Select a New Date &amp; Time
+        </h3>
+        <div class="date-picker">
+          <div class="month-nav">
+            <button onclick="rPrevMonth()">&#8249;</button>
+            <span id="r-month-label"></span>
+            <button onclick="rNextMonth()">&#8250;</button>
+          </div>
+          <div class="calendar" id="r-calendar"></div>
+        </div>
+        <div id="r-time-slots-section" style="display:none">
+          <h3 class="slots-title">Available Times <span id="r-selected-date-label"></span></h3>
+          <div class="time-slots" id="r-time-slots"></div>
+        </div>
+        <div class="btn-row" style="margin-top:22px">
+          <button class="btn-secondary" onclick="location.href=location.pathname">← Go Back</button>
+          <button class="btn-confirm" id="btn-do-reschedule" disabled onclick="submitReschedule()">
+            🔄 Confirm Reschedule
+          </button>
+        </div>
       </div>
     </div>
 
