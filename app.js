@@ -452,7 +452,7 @@ async function submitBooking() {
   });
 
   const ctrl    = new AbortController();
-  const timeout = setTimeout(() => ctrl.abort(), 30000);
+  const timeout = setTimeout(() => ctrl.abort(), 60000);
   try {
     const r    = await fetch(CFG.SCRIPT_URL + "?" + params.toString(), { signal: ctrl.signal });
     clearTimeout(timeout);
@@ -708,7 +708,9 @@ async function rFetchSlots(date) {
     if (rTime === val) el.classList.add("selected");
     el.addEventListener("click", () => {
       rTime = val;
-      rFetchSlots(rDate);
+      // Update selection visually without re-fetching (avoids race condition)
+      document.querySelectorAll("#r-time-slots .slot").forEach(s => s.classList.remove("selected"));
+      el.classList.add("selected");
       document.getElementById("btn-do-reschedule").disabled = false;
     });
     wrap.appendChild(el);
@@ -745,9 +747,15 @@ async function submitReschedule() {
     time:      rTime,
   });
 
+  const ctrl    = new AbortController();
+  const timeout = setTimeout(() => ctrl.abort(), 60000);
   try {
-    const r    = await fetch(`${CFG.SCRIPT_URL}?${params}`);
-    const data = await r.json();
+    const r    = await fetch(`${CFG.SCRIPT_URL}?${params}`, { signal: ctrl.signal });
+    clearTimeout(timeout);
+    const text = await r.text();
+    let data;
+    try { data = JSON.parse(text); }
+    catch { throw new Error("Invalid response from server. Please redeploy Apps Script."); }
 
     if (data.success) {
       document.getElementById("panel-reschedule").innerHTML = `
@@ -767,7 +775,10 @@ async function submitReschedule() {
       btn.textContent = "🔄 Confirm Reschedule";
     }
   } catch(e) {
-    alert("Connection error. Please try again.");
+    clearTimeout(timeout);
+    alert(e.name === "AbortError"
+      ? "Request timed out. Please try again."
+      : (e.message || "Connection error. Please try again."));
     btn.disabled = false;
     btn.textContent = "🔄 Confirm Reschedule";
   }
