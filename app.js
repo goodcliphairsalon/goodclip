@@ -819,6 +819,11 @@ function resetForm() {
   buildServices();
   document.getElementById("service-summary").classList.remove("visible");
   document.getElementById("btn-step1").disabled = true;
+  document.getElementById("btn-step2").disabled = true;
+  // Khôi phục nút Confirm (sau lần book trước nó bị để disabled + "Submitting…")
+  const confirmBtn = document.getElementById("btn-confirm");
+  confirmBtn.disabled = false;
+  confirmBtn.textContent = "✓ Confirm Booking";
   document.getElementById("time-slots-section").style.display = "none";
   const now = new Date();
   calYear = now.getFullYear(); calMonth = now.getMonth();
