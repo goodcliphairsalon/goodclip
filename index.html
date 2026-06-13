@@ -121,6 +121,21 @@
       </div>
     </div>
 
+    <!-- PANEL DONE (salon only — finished client early) -->
+    <div class="panel" id="panel-done">
+      <div class="success-icon" style="background:#2e7d32">✅</div>
+      <h2 style="color:#2e7d32;text-align:center">Mark as Done?</h2>
+      <p style="text-align:center;color:var(--text-light);margin-bottom:8px">
+        Finished this client early? Tap below to release the remaining time so you can take another client today.
+      </p>
+      <p id="done-ref-display" style="text-align:center;font-size:.8rem;color:#bbb;margin-bottom:28px"></p>
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="location.href=location.pathname">← Go Back</button>
+        <button class="btn-confirm" id="btn-do-done" style="background:#2e7d32;border-color:#2e7d32"
+                onclick="performDone()">✅ Yes, Done</button>
+      </div>
+    </div>
+
     <!-- PANEL CANCEL -->
     <div class="panel" id="panel-cancel">
       <div class="success-icon" style="background:#c62828">✕</div>

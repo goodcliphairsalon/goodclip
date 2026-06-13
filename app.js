@@ -67,12 +67,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const cancelId   = params.get("cancel");
   const declineId  = params.get("decline");
   const rescheduleId = params.get("reschedule");
+  const doneId     = params.get("done");
 
-  if (cancelId || declineId || rescheduleId) {
+  if (cancelId || declineId || rescheduleId || doneId) {
     document.querySelector(".steps").style.display = "none";
     document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
 
-    if (declineId) {
+    if (doneId) {
+      document.getElementById("panel-done").classList.add("active");
+      document.getElementById("done-ref-display").textContent = "Booking ref: " + doneId;
+      window._doneId = doneId;
+    } else if (declineId) {
       document.getElementById("panel-decline").classList.add("active");
       document.getElementById("decline-ref-display").textContent = "Booking ref: " + declineId;
       window._declineId = declineId;
@@ -518,6 +523,40 @@ function showSuccess() {
     s.classList.remove("active"); s.classList.add("done");
   }
   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+// ─────────────────────────────────────────
+//  DONE (salon only — finished client early)
+// ─────────────────────────────────────────
+async function performDone() {
+  const bookingId = window._doneId;
+  const btn = document.getElementById("btn-do-done");
+  btn.disabled = true;
+  btn.textContent = "Processing…";
+
+  try {
+    const r    = await fetch(`${CFG.SCRIPT_URL}?action=done&bookingId=${encodeURIComponent(bookingId)}`);
+    const data = await r.json();
+
+    if (data.success) {
+      const freedMsg = data.freedMinutes > 0
+        ? `<strong>${data.freedMinutes} min</strong> freed up — now open for new bookings.`
+        : `The appointment is marked complete.`;
+      document.getElementById("panel-done").innerHTML = `
+        <div class="success-icon" style="background:#2e7d32">✅</div>
+        <h2 style="color:#2e7d32;text-align:center">Marked as Done</h2>
+        <p style="text-align:center;color:var(--text-light);margin-bottom:8px">${freedMsg}</p>
+        <p style="text-align:center;color:var(--text-light)">Ends at <strong>${data.newEnd || ""}</strong></p>`;
+    } else {
+      alert(data.message || "Unable to mark done. Please try again.");
+      btn.disabled = false;
+      btn.textContent = "✅ Yes, Done";
+    }
+  } catch (e) {
+    alert("Connection error. Please try again.");
+    btn.disabled = false;
+    btn.textContent = "✅ Yes, Done";
+  }
 }
 
 // ─────────────────────────────────────────
