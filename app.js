@@ -451,8 +451,11 @@ async function submitBooking() {
     total:    String(svcs.reduce((t, s) => t + s.base, 0)),
   });
 
+  const dateStr = fmtDate(S.date);
+  const timeStr = S.time;
+
   const ctrl    = new AbortController();
-  const timeout = setTimeout(() => ctrl.abort(), 60000);
+  const timeout = setTimeout(() => ctrl.abort(), 25000);
   try {
     const r    = await fetch(CFG.SCRIPT_URL + "?" + params.toString(), { signal: ctrl.signal });
     clearTimeout(timeout);
@@ -466,12 +469,33 @@ async function submitBooking() {
     }
   } catch(e) {
     clearTimeout(timeout);
+    // Apps Script fetch cross-origin đôi khi treo dù booking ĐÃ lưu server-side.
+    // Tự xác minh: kiểm tra slot đã bị đặt chưa → nếu rồi thì coi như thành công.
+    const saved = await verifyBooked(dateStr, timeStr);
+    if (saved) {
+      showSuccess();
+      return;
+    }
     alert(e.name === "AbortError"
       ? "Request timed out. Please check your connection and try again."
       : "Connection error. Please try again.");
     btn.disabled = false;
     btn.textContent = "✓ Confirm Booking";
   }
+}
+
+// Kiểm tra một slot (HH:mm) đã bị đặt trên server chưa — dùng để xác minh
+// khi response booking không về tới trình duyệt (fetch treo/timeout).
+async function verifyBooked(dateStr, timeStr) {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const r = await fetch(CFG.SCRIPT_URL + "?action=slots&date=" + dateStr + "&_=" + Date.now());
+      const d = await r.json();
+      if (Array.isArray(d.booked) && d.booked.includes(timeStr)) return true;
+    } catch (_) { /* thử lại */ }
+    await new Promise(res => setTimeout(res, 2000));
+  }
+  return false;
 }
 
 function showSuccess() {
