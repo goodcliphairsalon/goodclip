@@ -10,7 +10,7 @@
   <div class="container">
 
     <header class="header">
-      <div class="logo">✂ GoodClip Hair</div>
+      <img class="logo-img" src="logo.jpg" alt="Good Clip Hair Salon by Hanh Dao">
       <p class="tagline">Book Your Appointment</p>
       <p class="hours">Mon – Sat &nbsp;|&nbsp; 10:00 AM – 7:00 PM</p>
     </header>
@@ -92,11 +92,17 @@
 
     <!-- PANEL SUCCESS -->
     <div class="panel" id="panel-success">
+      <img src="logo.jpg" alt="Good Clip Hair Salon" style="display:block;width:120px;height:120px;border-radius:50%;object-fit:cover;margin:0 auto 16px;box-shadow:0 4px 14px rgba(0,0,0,.15)">
       <div class="success-icon">✓</div>
       <h2 style="color:#2e7d32;text-align:center">Booking Confirmed!</h2>
       <p style="text-align:center;color:var(--text-light);margin-bottom:6px">We'll see you soon at <strong>Good Clip Hair Salon</strong>!</p>
       <p style="text-align:center;color:var(--text-light);margin-bottom:20px">📞 <a href="tel:+14257936303" style="color:inherit;font-weight:700;text-decoration:none">(425) 793-6303</a></p>
       <div class="booking-summary" id="success-details"></div>
+      <div style="text-align:center;margin-top:24px;padding-top:20px;border-top:1px solid #eee">
+        <img src="qr-booking-navy.png" alt="Book online QR code" style="width:130px;height:130px;display:block;margin:0 auto 8px">
+        <p style="color:var(--text-light);font-size:.85rem;margin:0">Scan to book again or share with friends</p>
+        <p style="color:var(--primary);font-weight:700;font-size:.9rem;margin:2px 0 0">goodcliphair.com</p>
+      </div>
       <button class="btn-primary" style="margin-top:24px" onclick="resetForm()">Book Another Appointment</button>
     </div>
 
