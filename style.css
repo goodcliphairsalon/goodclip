@@ -24,13 +24,14 @@ body {
 
 .container { max-width: 660px; margin: 0 auto; }
 
-/* â”€â”€ Header â”€â”€ */
-.header { text-align: center; padding: 36px 0 28px; }
+/* ── Header ── */
+.header { text-align: center; padding: 28px 0 24px; }
 .logo   { font-size: 1.9rem; font-weight: 800; color: var(--primary); letter-spacing: -0.5px; }
+.logo-img { width: 130px; height: 130px; border-radius: 50%; object-fit: cover; box-shadow: 0 4px 16px rgba(0,0,0,0.14); }
 .tagline{ color: var(--text-light); margin-top: 6px; font-size: 1rem; }
 .hours  { color: var(--accent); font-size: 0.82rem; font-weight: 600; margin-top: 6px; letter-spacing: 0.3px; }
 
-/* â”€â”€ Steps â”€â”€ */
+/* ── Steps ── */
 .steps {
   display: flex;
   align-items: center;
@@ -61,13 +62,13 @@ body {
 .step-line { height: 2px; flex: 1; max-width: 56px; background: var(--border); margin-bottom: 22px; transition: background .25s; }
 .step-line.done { background: var(--primary); }
 
-/* â”€â”€ Panel â”€â”€ */
+/* ── Panel ── */
 .panel { display: none; background: var(--white); border-radius: var(--radius); padding: 28px 28px 32px; box-shadow: var(--shadow); }
 .panel.active { display: block; animation: fadeUp .25s ease; }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .panel h2 { font-size: 1.3rem; font-weight: 700; color: var(--primary); margin-bottom: 22px; }
 
-/* â”€â”€ Service list â”€â”€ */
+/* ── Service list ── */
 .service-category { margin-bottom: 22px; }
 .cat-title {
   font-size: 0.72rem; font-weight: 700; letter-spacing: 1.2px;
@@ -101,7 +102,7 @@ body {
 .svc-dur  { font-size: 0.76rem; color: var(--text-light); margin-top: 2px; }
 .svc-price{ font-weight: 700; color: var(--accent); font-size: 0.9rem; white-space: nowrap; margin-left: 10px; }
 
-/* â”€â”€ Summary bar â”€â”€ */
+/* ── Summary bar ── */
 .summary-bar {
   background: var(--primary); color: #fff;
   border-radius: 10px; padding: 13px 18px;
@@ -111,7 +112,7 @@ body {
 .summary-bar.visible { display: flex; }
 .sum-total { font-weight: 700; font-size: 1rem; }
 
-/* â”€â”€ Buttons â”€â”€ */
+/* ── Buttons ── */
 .btn-primary {
   width: 100%; padding: 14px;
   background: var(--accent); color: #fff;
@@ -140,7 +141,7 @@ body {
 .btn-row { display: flex; gap: 10px; margin-top: 22px; }
 .btn-row .btn-primary { width: auto; flex: 1; }
 
-/* â”€â”€ Calendar â”€â”€ */
+/* ── Calendar ── */
 .month-nav {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 14px;
@@ -168,7 +169,7 @@ body {
 .cal-day.selected   { background: var(--accent); color: #fff; font-weight: 700; border-color: var(--accent); }
 .cal-day.today:not(.selected) { border-color: var(--primary); font-weight: 700; }
 
-/* â”€â”€ Time slots â”€â”€ */
+/* ── Time slots ── */
 .slots-title { font-size: 0.92rem; font-weight: 600; color: var(--primary); margin: 20px 0 10px; }
 .slots-title span { color: var(--accent); }
 .time-slots { display: grid; grid-template-columns: repeat(4,1fr); gap: 7px; }
@@ -183,7 +184,7 @@ body {
 .slot.booked    { background: #f5f5f5; color: #ccc; cursor: not-allowed; text-decoration: line-through; }
 .slots-loading  { text-align: center; color: var(--text-light); padding: 18px; font-size: 0.9rem; }
 
-/* â”€â”€ Form â”€â”€ */
+/* ── Form ── */
 .form-group { margin-bottom: 16px; }
 .form-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--primary); margin-bottom: 6px; }
 .req { color: #e53935; }
@@ -199,7 +200,7 @@ body {
 .form-group textarea:focus { outline: none; border-color: var(--accent); }
 .form-group textarea { height: 76px; resize: none; }
 
-/* â”€â”€ Booking summary â”€â”€ */
+/* ── Booking summary ── */
 .booking-summary { background: var(--bg); border-radius: 12px; padding: 18px 20px; }
 .sum-row {
   display: flex; justify-content: space-between; align-items: flex-start;
@@ -210,7 +211,7 @@ body {
 .sum-val { font-weight: 600; color: var(--primary); text-align: right; }
 .sum-row.total .sum-val { color: var(--accent); font-size: 1rem; }
 
-/* â”€â”€ Success â”€â”€ */
+/* ── Success ── */
 .success-icon {
   width: 66px; height: 66px; background: var(--success);
   border-radius: 50%; display: flex; align-items: center;
@@ -218,7 +219,7 @@ body {
   margin: 0 auto 18px;
 }
 
-/* â”€â”€ Responsive â”€â”€ */
+/* ── Responsive ── */
 @media (max-width: 460px) {
   .panel { padding: 20px 15px 24px; }
   .time-slots { grid-template-columns: repeat(3,1fr); }
