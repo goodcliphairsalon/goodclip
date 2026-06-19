@@ -58,6 +58,7 @@ let S = {
 };
 
 let calYear, calMonth;
+let closedPeriods = [];  // [{start:"2026-07-04", end:"2026-07-04", reason:"...", reopen:"2026-07-05"}]
 
 // ─────────────────────────────────────────
 //  BOOT
@@ -97,8 +98,25 @@ document.addEventListener("DOMContentLoaded", () => {
   calYear   = now.getFullYear();
   calMonth  = now.getMonth();
   buildServices();
-  renderCalendar();
+  loadClosedDates().then(() => renderCalendar());
 });
+
+async function loadClosedDates() {
+  try {
+    const res  = await fetch(`${CFG.SCRIPT_URL}?action=closedDates`);
+    const data = await res.json();
+    if (data.closed) closedPeriods = data.closed;
+  } catch(e) {
+    closedPeriods = [];
+  }
+}
+
+function getClosedInfo(dateStr) {
+  for (const p of closedPeriods) {
+    if (dateStr >= p.start && dateStr <= p.end) return p;
+  }
+  return null;
+}
 
 // ─────────────────────────────────────────
 //  STEP 1 – Services
@@ -187,13 +205,20 @@ function renderCalendar() {
     cal.appendChild(e);
   }
 
+  // Remove old closed notice
+  const oldNotice = document.getElementById("closed-notice");
+  if (oldNotice) oldNotice.remove();
+
   for (let d = 1; d <= daysInMo; d++) {
-    const date    = new Date(calYear, calMonth, d);
-    const dow     = date.getDay();
-    const past    = date < today;
-    const tooFar  = date > maxDate;
-    const open    = CFG.openDays.includes(dow);
-    const avail   = !past && !tooFar && open;
+    const date      = new Date(calYear, calMonth, d);
+    const dow       = date.getDay();
+    const past      = date < today;
+    const tooFar    = date > maxDate;
+    const open      = CFG.openDays.includes(dow);
+    const dateStr   = fmtDate(date);
+    const closedInfo = (!past && !tooFar) ? getClosedInfo(dateStr) : null;
+    const isSalonClosed = !!closedInfo;
+    const avail     = !past && !tooFar && open && !isSalonClosed;
 
     const isToday    = date.getTime() === today.getTime();
     const isSelected = S.date &&
@@ -205,16 +230,47 @@ function renderCalendar() {
     el.textContent = d;
 
     let cls = "cal-day";
-    if      (isSelected)  cls += " selected";
-    else if (past)        cls += " past";
+    if      (isSelected)    cls += " selected";
+    else if (past)          cls += " past";
+    else if (isSalonClosed) cls += " salon-closed";
     else if (!open || tooFar) cls += " closed";
-    else                  cls += " available";
+    else                    cls += " available";
     if (isToday && !isSelected) cls += " today";
 
     el.className = cls;
-    if (avail) el.addEventListener("click", () => pickDate(new Date(calYear, calMonth, d)));
+    if (avail) {
+      el.addEventListener("click", () => pickDate(new Date(calYear, calMonth, d)));
+    } else if (isSalonClosed) {
+      el.title = closedInfo.reason || "Salon closed";
+      el.addEventListener("click", () => showClosedNotice(closedInfo));
+    }
     cal.appendChild(el);
   }
+}
+
+function showClosedNotice(info) {
+  const old = document.getElementById("closed-notice");
+  if (old) old.remove();
+
+  const reopenText = info.reopen
+    ? ` We reopen on <strong>${fmtDateDisplayStr(info.reopen)}</strong>.`
+    : "";
+  const rangeText = info.start === info.end
+    ? `<strong>${fmtDateDisplayStr(info.start)}</strong>`
+    : `<strong>${fmtDateDisplayStr(info.start)}</strong> – <strong>${fmtDateDisplayStr(info.end)}</strong>`;
+
+  const notice = document.createElement("div");
+  notice.id = "closed-notice";
+  notice.innerHTML =
+    `🚫 <strong>${info.reason || "Salon is closed"}</strong> on ${rangeText}.${reopenText}
+     <br><span style="font-size:.8rem;color:#999">Please select another date.</span>`;
+  document.getElementById("calendar").after(notice);
+}
+
+function fmtDateDisplayStr(dateStr) {
+  if (!dateStr) return "";
+  const [y, m, d] = dateStr.split("-");
+  return `${m}/${d}/${y}`;
 }
 
 function pickDate(date) {
@@ -237,6 +293,10 @@ async function fetchSlots(date) {
   try {
     const r    = await fetch(`${CFG.SCRIPT_URL}?action=slots&date=${fmtDate(date)}`);
     const data = await r.json();
+    if (data.closed) {
+      wrap.innerHTML = `<div class="closed-notice-inline">🚫 <strong>${data.reason || "Salon is closed"}</strong>${data.reopen ? `. Reopens <strong>${fmtDateDisplayStr(data.reopen)}</strong>` : ""}.</div>`;
+      return;
+    }
     S.bookedSlots = data.booked || [];
   } catch {
     S.bookedSlots = [];
@@ -402,16 +462,21 @@ function row(lbl, val, cls = "") {
 function goToStep(n) {
   if (n === 3 && (!S.date || !S.time)) return;
   if (n === 4) {
-    const name  = document.getElementById("inp-name").value.trim();
-    const phone = document.getElementById("inp-phone").value.trim();
-    const email = document.getElementById("inp-email").value.trim();
+    const name    = document.getElementById("inp-name").value.trim();
+    const phone   = document.getElementById("inp-phone").value.trim();
+    const email   = document.getElementById("inp-email").value.trim();
+    const carrier = document.getElementById("inp-carrier").value.trim();
     if (!name || !phone) { alert("Please enter your name and phone number."); return; }
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       alert("Please enter a valid email address (e.g. name@gmail.com), or leave it blank.");
       return;
     }
+    if (!email && !carrier) {
+      alert("Please enter an email or select your mobile carrier to receive a confirmation.");
+      return;
+    }
     S.customer = {
-      name, phone, email,
+      name, phone, email, carrier,
       notes: document.getElementById("inp-notes").value.trim(),
     };
     renderReview();
@@ -452,6 +517,7 @@ async function submitBooking() {
     name:     S.customer.name,
     phone:    S.customer.phone,
     email:    S.customer.email || "",
+    carrier:  S.customer.carrier || "",
     notes:    S.customer.notes || "",
     total:    String(svcs.reduce((t, s) => t + s.base, 0)),
   });
@@ -855,6 +921,8 @@ function resetForm() {
   ["inp-name","inp-phone","inp-email","inp-notes"].forEach(id => {
     document.getElementById(id).value = "";
   });
+  document.getElementById("inp-carrier").value = "";
+  document.getElementById("carrier-group").style.display = "none";
   buildServices();
   document.getElementById("service-summary").classList.remove("visible");
   document.getElementById("btn-step1").disabled = true;
@@ -868,6 +936,11 @@ function resetForm() {
   calYear = now.getFullYear(); calMonth = now.getMonth();
   goToStep(1);
   renderCalendar();
+}
+
+function toggleCarrier() {
+  const email = document.getElementById("inp-email").value.trim();
+  document.getElementById("carrier-group").style.display = email ? "none" : "block";
 }
 
 // ─────────────────────────────────────────
