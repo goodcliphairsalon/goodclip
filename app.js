@@ -104,12 +104,42 @@ document.addEventListener("DOMContentLoaded", () => {
 
 async function loadClosedDates() {
   try {
-    const res  = await fetch(`${CFG.SCRIPT_URL}?action=closedDates`);
+    const res  = await fetch(`${CFG.SCRIPT_URL}?action=closedDates&_=${Date.now()}`);
     const data = await res.json();
     if (data.closed) closedPeriods = data.closed;
   } catch(e) {
     closedPeriods = [];
   }
+}
+
+// Banner luôn hiển thị trên lịch: liệt kê các đợt đóng cửa sắp tới / đang diễn ra
+function renderClosedBanner() {
+  const existing = document.getElementById("closed-banner");
+  if (existing) existing.remove();
+  if (!closedPeriods.length) return;
+
+  const today = fmtDate(new Date());
+  const upcoming = closedPeriods
+    .filter(p => p.end >= today)
+    .sort((a, b) => (a.start < b.start ? -1 : 1));
+  if (!upcoming.length) return;
+
+  const lines = upcoming.map(p => {
+    const range = p.start === p.end
+      ? `<strong>${fmtDateDisplayStr(p.start)}</strong>`
+      : `<strong>${fmtDateDisplayStr(p.start)}</strong> – <strong>${fmtDateDisplayStr(p.end)}</strong>`;
+    const reopen = p.reopen ? ` · Reopens <strong>${fmtDateDisplayStr(p.reopen)}</strong>` : "";
+    const reason = p.reason ? `${p.reason} — ` : "";
+    return `<div>🚫 ${reason}Closed ${range}${reopen}</div>`;
+  }).join("");
+
+  const banner = document.createElement("div");
+  banner.id = "closed-banner";
+  banner.className = "closed-banner";
+  banner.innerHTML = lines;
+
+  const dp = document.querySelector("#panel-2 .date-picker");
+  if (dp) dp.parentNode.insertBefore(banner, dp);
 }
 
 function getClosedInfo(dateStr) {
@@ -209,6 +239,9 @@ function renderCalendar() {
   // Remove old closed notice
   const oldNotice = document.getElementById("closed-notice");
   if (oldNotice) oldNotice.remove();
+
+  // Banner thông báo đợt đóng cửa (luôn hiển thị, không cần bấm)
+  renderClosedBanner();
 
   for (let d = 1; d <= daysInMo; d++) {
     const date      = new Date(calYear, calMonth, d);
