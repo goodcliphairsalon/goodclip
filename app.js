@@ -499,7 +499,8 @@ function goToStep(n) {
     const name    = document.getElementById("inp-name").value.trim();
     const phone   = document.getElementById("inp-phone").value.trim();
     const email   = document.getElementById("inp-email").value.trim();
-    const carrier = document.getElementById("inp-carrier").value.trim();
+    const carrierEl = document.getElementById("inp-carrier");
+    const carrier = carrierEl ? carrierEl.value.trim() : "";
     if (!name || !phone) { alert("Please enter your name and phone number."); return; }
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       alert("Please enter a valid email address (e.g. name@gmail.com), or leave it blank.");
@@ -951,8 +952,10 @@ function resetForm() {
   ["inp-name","inp-phone","inp-email","inp-notes"].forEach(id => {
     document.getElementById(id).value = "";
   });
-  document.getElementById("inp-carrier").value = "";
-  document.getElementById("carrier-group").style.display = "none";
+  const carrierEl0 = document.getElementById("inp-carrier");
+  if (carrierEl0) carrierEl0.value = "";
+  const carrierGrp0 = document.getElementById("carrier-group");
+  if (carrierGrp0) carrierGrp0.style.display = "none";
   buildServices();
   document.getElementById("service-summary").classList.remove("visible");
   document.getElementById("btn-step1").disabled = true;
@@ -969,8 +972,10 @@ function resetForm() {
 }
 
 function toggleCarrier() {
+  const grp = document.getElementById("carrier-group");
+  if (!grp) return;
   const email = document.getElementById("inp-email").value.trim();
-  document.getElementById("carrier-group").style.display = email ? "none" : "block";
+  grp.style.display = email ? "none" : "block";
 }
 
 // ─────────────────────────────────────────
