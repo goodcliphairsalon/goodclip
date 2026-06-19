@@ -99,6 +99,7 @@ document.addEventListener("DOMContentLoaded", () => {
   calMonth  = now.getMonth();
   buildServices();
   loadClosedDates().then(() => renderCalendar());
+  toggleCarrier(); // hiện carrier dropdown ngay vì email mặc định trống
 });
 
 async function loadClosedDates() {
@@ -469,10 +470,6 @@ function goToStep(n) {
     if (!name || !phone) { alert("Please enter your name and phone number."); return; }
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       alert("Please enter a valid email address (e.g. name@gmail.com), or leave it blank.");
-      return;
-    }
-    if (!email && !carrier) {
-      alert("Please enter an email or select your mobile carrier to receive a confirmation.");
       return;
     }
     S.customer = {
