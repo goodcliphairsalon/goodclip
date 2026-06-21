@@ -99,7 +99,6 @@ document.addEventListener("DOMContentLoaded", () => {
   calMonth  = now.getMonth();
   buildServices();
   loadClosedDates().then(() => renderCalendar());
-  toggleCarrier(); // hiện carrier dropdown ngay vì email mặc định trống
 });
 
 async function loadClosedDates() {
@@ -971,12 +970,8 @@ function resetForm() {
   renderCalendar();
 }
 
-function toggleCarrier() {
-  const grp = document.getElementById("carrier-group");
-  if (!grp) return;
-  const email = document.getElementById("inp-email").value.trim();
-  grp.style.display = email ? "none" : "block";
-}
+// (Đã bỏ dropdown carrier — SMS giờ gửi tới tất cả nhà mạng, chỉ cần số ĐT)
+function toggleCarrier() { /* no-op, giữ để tương thích ngược */ }
 
 // ─────────────────────────────────────────
 //  HELPERS
