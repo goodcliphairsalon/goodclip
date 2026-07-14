@@ -99,6 +99,7 @@ document.addEventListener("DOMContentLoaded", () => {
   calMonth  = now.getMonth();
   buildServices();
   loadClosedDates().then(() => renderCalendar());
+  toggleCarrier();
 });
 
 async function loadClosedDates() {
@@ -493,31 +494,39 @@ function row(lbl, val, cls = "") {
 //  NAVIGATION
 // ─────────────────────────────────────────
 async function goToStep(n) {
-  if (n === 3 && (!S.date || !S.time)) return;
-  if (n === 4) {
-    const name    = document.getElementById("inp-name").value.trim();
-    const phone   = document.getElementById("inp-phone").value.trim();
-    const email   = document.getElementById("inp-email").value.trim();
+  if (n === 3) {
+    // Bước 2→3: validate thông tin khách + check block
+    const name     = document.getElementById("inp-name").value.trim();
+    const phone    = document.getElementById("inp-phone").value.trim();
+    const email    = document.getElementById("inp-email").value.trim();
     const carrierEl = document.getElementById("inp-carrier");
-    const carrier = carrierEl ? carrierEl.value.trim() : "";
+    const carrier  = carrierEl ? carrierEl.value.trim() : "";
     if (!name || !phone) { alert("Please enter your name and phone number."); return; }
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       alert("Please enter a valid email address (e.g. name@gmail.com), or leave it blank.");
       return;
     }
-    // Check block trước khi cho qua bước 4
+    // Check block trước khi cho chọn ngày giờ
+    const btn3 = document.getElementById("btn-step2-info");
+    if (btn3) { btn3.disabled = true; btn3.textContent = "Checking…"; }
     try {
-      const r = await fetch(CFG.SCRIPT_URL + "?action=checkBlock&phone=" + encodeURIComponent(phone));
+      const r = await fetch(CFG.SCRIPT_URL + "?action=checkBlock&phone=" + encodeURIComponent(phone) + "&email=" + encodeURIComponent(email));
       const d = await r.json();
       if (d.blocked) {
         alert("We're unable to process your booking, please try another day.");
+        if (btn3) { btn3.disabled = false; btn3.textContent = "Continue →"; }
         return;
       }
-    } catch(e) { /* nếu lỗi mạng thì vẫn cho qua, server sẽ check lại */ }
+    } catch(e) { /* lỗi mạng → vẫn cho qua, server check lại lúc submit */ }
+    if (btn3) { btn3.disabled = false; btn3.textContent = "Continue →"; }
     S.customer = {
       name, phone, email, carrier,
       notes: document.getElementById("inp-notes").value.trim(),
     };
+  }
+  if (n === 4) {
+    // Bước 3→4: phải đã chọn ngày và giờ
+    if (!S.date || !S.time) return;
     renderReview();
   }
 
@@ -979,8 +988,12 @@ function resetForm() {
   renderCalendar();
 }
 
-// (Đã bỏ dropdown carrier — SMS giờ gửi tới tất cả nhà mạng, chỉ cần số ĐT)
-function toggleCarrier() { /* no-op, giữ để tương thích ngược */ }
+function toggleCarrier() {
+  const email = document.getElementById("inp-email");
+  const grp   = document.getElementById("carrier-group");
+  if (!email || !grp) return;
+  grp.style.display = email.value.trim() ? "none" : "block";
+}
 
 // ─────────────────────────────────────────
 //  HELPERS
