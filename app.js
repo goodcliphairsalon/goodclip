@@ -510,14 +510,17 @@ async function goToStep(n) {
     const btn3 = document.getElementById("btn-step2-info");
     if (btn3) { btn3.disabled = true; btn3.textContent = "Checking…"; }
     try {
-      const r = await fetch(CFG.SCRIPT_URL + "?action=checkBlock&phone=" + encodeURIComponent(phone) + "&email=" + encodeURIComponent(email));
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 8000);
+      const r = await fetch(CFG.SCRIPT_URL + "?action=checkBlock&phone=" + encodeURIComponent(phone) + "&email=" + encodeURIComponent(email), { signal: ctrl.signal });
+      clearTimeout(timer);
       const d = await r.json();
       if (d.blocked) {
-        alert("We're unable to process your booking, please try another day.");
         if (btn3) { btn3.disabled = false; btn3.textContent = "Continue →"; }
+        alert("We're unable to process your booking, please try another day.");
         return;
       }
-    } catch(e) { /* lỗi mạng → vẫn cho qua, server check lại lúc submit */ }
+    } catch(e) { /* timeout hoặc lỗi mạng → vẫn cho qua, server check lại lúc submit */ }
     if (btn3) { btn3.disabled = false; btn3.textContent = "Continue →"; }
     S.customer = {
       name, phone, email, carrier,
