@@ -493,7 +493,7 @@ function row(lbl, val, cls = "") {
 // ─────────────────────────────────────────
 //  NAVIGATION
 // ─────────────────────────────────────────
-async function goToStep(n) {
+function goToStep(n) {
   if (n === 3) {
     // Bước 2→3: validate thông tin khách + check block
     const name     = document.getElementById("inp-name").value.trim();
@@ -506,26 +506,15 @@ async function goToStep(n) {
       alert("Please enter a valid email address (e.g. name@gmail.com), or leave it blank.");
       return;
     }
-    // Check block trước khi cho chọn ngày giờ
-    const btn3 = document.getElementById("btn-step2-info");
-    if (btn3) { btn3.disabled = true; btn3.textContent = "Checking…"; }
-    try {
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 8000);
-      const r = await fetch(CFG.SCRIPT_URL + "?action=checkBlock&phone=" + encodeURIComponent(phone) + "&email=" + encodeURIComponent(email), { signal: ctrl.signal });
-      clearTimeout(timer);
-      const d = await r.json();
-      if (d.blocked) {
-        if (btn3) { btn3.disabled = false; btn3.textContent = "Continue →"; }
-        alert("We're unable to process your booking, please try another day.");
-        return;
-      }
-    } catch(e) { /* timeout hoặc lỗi mạng → vẫn cho qua, server check lại lúc submit */ }
-    if (btn3) { btn3.disabled = false; btn3.textContent = "Continue →"; }
     S.customer = {
       name, phone, email, carrier,
       notes: document.getElementById("inp-notes").value.trim(),
     };
+    // Check block nền — không chặn UI, server sẽ check lại lúc submit
+    fetch(CFG.SCRIPT_URL + "?action=checkBlock&phone=" + encodeURIComponent(phone) + "&email=" + encodeURIComponent(email))
+      .then(r => r.json())
+      .then(d => { if (d.blocked) { alert("We're unable to process your booking, please try another day."); goToStep(2); } })
+      .catch(() => {});
   }
   if (n === 4) {
     // Bước 3→4: phải đã chọn ngày và giờ
