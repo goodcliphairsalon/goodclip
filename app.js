@@ -492,7 +492,7 @@ function row(lbl, val, cls = "") {
 // ─────────────────────────────────────────
 //  NAVIGATION
 // ─────────────────────────────────────────
-function goToStep(n) {
+async function goToStep(n) {
   if (n === 3 && (!S.date || !S.time)) return;
   if (n === 4) {
     const name    = document.getElementById("inp-name").value.trim();
@@ -505,6 +505,15 @@ function goToStep(n) {
       alert("Please enter a valid email address (e.g. name@gmail.com), or leave it blank.");
       return;
     }
+    // Check block trước khi cho qua bước 4
+    try {
+      const r = await fetch(CFG.SCRIPT_URL + "?action=checkBlock&phone=" + encodeURIComponent(phone));
+      const d = await r.json();
+      if (d.blocked) {
+        alert("We're unable to process your booking, please try another day.");
+        return;
+      }
+    } catch(e) { /* nếu lỗi mạng thì vẫn cho qua, server sẽ check lại */ }
     S.customer = {
       name, phone, email, carrier,
       notes: document.getElementById("inp-notes").value.trim(),
