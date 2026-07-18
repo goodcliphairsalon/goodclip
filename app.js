@@ -15,7 +15,7 @@ const CFG = {
   optimization: "reduce",
 
   // Online availability
-  minBookAheadHours:  2,    // must book at least X hours before start (0 = immediately)
+  minBookAheadHours:  0,    // must book at least X hours before start (0 = immediately)
   maxBookAheadMonths: 3,    // can only book within X months from today
   cancelCutoffHours:  2,    // must cancel at least X hours before (0 = anytime)
 };
