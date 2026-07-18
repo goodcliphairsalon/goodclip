@@ -26,6 +26,7 @@ const CFG = {
 const SERVICES = {
   "✂️ Hair Services": [
     { id:"mens-cut",       name:"Men's Haircut",                      price:"$30+",     base:30,  dur:30  },
+    { id:"beard-trim",     name:"Beard Trim",                         price:"$8+",      base:8,   dur:15  },
     { id:"mens-shampoo",   name:"Men's Shampoo Add-on",               price:"$5+",      base:5,   dur:15  },
     { id:"womens-cut",     name:"Women's Haircut",                    price:"$35+",     base:35,  dur:30  },
     { id:"womens-shampoo", name:"Women's Shampoo Add-on",             price:"$7+",      base:7,   dur:15  },
@@ -40,9 +41,10 @@ const SERVICES = {
     { id:"perm",           name:"Hair Perm",        price:"$90+",  base:90,  dur:60  },
   ],
   "👁️ Waxing Services": [
-    { id:"eyebrow",  name:"Eyebrow Waxing", price:"$12+", base:12, dur:15 },
-    { id:"lip",      name:"Lip Waxing",     price:"$12+", base:12, dur:15 },
-    { id:"back-wax", name:"Back Waxing",    price:"$110+", base:110, dur:30 },
+    { id:"eyebrow",   name:"Eyebrow Waxing", price:"$12+",  base:12,  dur:15 },
+    { id:"lip",       name:"Lip Waxing",     price:"$12+",  base:12,  dur:15 },
+    { id:"facial-wax",name:"Facial Wax",     price:"$45+",  base:45,  dur:15 },
+    { id:"back-wax",  name:"Back Waxing",    price:"$110+", base:110, dur:30 },
   ],
 };
 
