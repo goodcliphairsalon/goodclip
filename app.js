@@ -25,13 +25,13 @@ const CFG = {
 // ─────────────────────────────────────────
 const SERVICES = {
   "✂️ Hair Services": [
-    { id:"mens-cut",       name:"Men's Haircut",                      price:"$30+",     base:30,  dur:30  },
-    { id:"beard-trim",     name:"Beard Trim",                         price:"$8+",      base:8,   dur:15  },
-    { id:"mens-shampoo",   name:"Men's Shampoo Add-on",               price:"$5+",      base:5,   dur:15  },
-    { id:"womens-cut",     name:"Women's Haircut",                    price:"$35+",     base:35,  dur:30  },
-    { id:"womens-shampoo", name:"Women's Shampoo Add-on",             price:"$7+",      base:7,   dur:15  },
-    { id:"blowdry",        name:"Shampoo + Simple Blow Dry",          price:"$20+",     base:20,  dur:30  },
-    { id:"flatstyle",      name:"Shampoo + Straight Flat Iron Style", price:"$45+",     base:45,  dur:45  },
+    { id:"mens-cut",          name:"Men's Haircut",                          price:"$32+", base:32, dur:30 },
+    { id:"mens-cut-shampoo",  name:"Men's Haircut+ Shampoo",                 price:"$40+", base:40, dur:30 },
+    { id:"beard-trim",        name:"Beard Trim",                             price:"$8+",  base:8,  dur:15 },
+    { id:"womens-cut",        name:"Women's Haircut",                        price:"$35+", base:35, dur:30 },
+    { id:"womens-cut-blowdry",name:"Women's Haircut+ Shampoo + Simple Blow Dry", price:"$55+", base:55, dur:45 },
+    { id:"blowdry",           name:"Shampoo + Simple Blow Dry",              price:"$20+", base:20, dur:30 },
+    { id:"flatstyle",         name:"Shampoo + Straight Flat Iron Style",     price:"$45+", base:45, dur:45 },
   ],
   "🎨 Hair Color & Perm": [
     { id:"root",           name:"Root Retouch",     price:"$90+",  base:90,  dur:60  },
