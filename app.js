@@ -432,7 +432,7 @@ function genSlots(totalDur) {
 
   } else {
     // "reduce" — skip slots that leave gaps smaller than minGap minutes
-    const minGap = 30;
+    const minGap = 0;
     for (const [bs, be] of freeBlocks()) {
       if (be - bs < totalDur) continue;
       for (let m = bs; m <= be - totalDur; m += CFG.slotMin) {
