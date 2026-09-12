@@ -65,6 +65,24 @@ let closedPeriods = [];  // [{start:"2026-07-04", end:"2026-07-04", reason:"..."
 // ─────────────────────────────────────────
 //  BOOT
 // ─────────────────────────────────────────
+const STAFF_PIN  = "6303";   // last 4 digits of salon phone — change here to update
+let   STAFF_MODE = false;
+
+function checkStaffPin() {
+  const params = new URLSearchParams(window.location.search);
+  if (!params.has("staff")) return;
+  const pin = prompt("Enter staff PIN to continue:");
+  if (pin === STAFF_PIN) {
+    STAFF_MODE = true;
+  } else {
+    // Wrong or cancelled — strip ?staff from URL and reload as normal customer
+    params.delete("staff");
+    const newUrl = window.location.pathname + (params.toString() ? "?" + params.toString() : "");
+    window.history.replaceState({}, "", newUrl);
+  }
+}
+checkStaffPin();
+
 document.addEventListener("DOMContentLoaded", () => {
   const params     = new URLSearchParams(window.location.search);
   const cancelId   = params.get("cancel");
@@ -102,6 +120,27 @@ document.addEventListener("DOMContentLoaded", () => {
   buildServices();
   loadClosedDates().then(() => renderCalendar());
   toggleCarrier();
+
+  if (STAFF_MODE) {
+    // Show staff-mode banner
+    const banner = document.createElement("div");
+    banner.id = "staff-banner";
+    banner.innerHTML = "🔑 Staff Mode — Booking for Customer";
+    Object.assign(banner.style, {
+      background:"#1C3D35", color:"#fff", textAlign:"center",
+      padding:"8px", fontSize:"13px", fontWeight:"600",
+      position:"fixed", top:"0", left:"0", right:"0", zIndex:"9999"
+    });
+    document.body.prepend(banner);
+    document.body.style.paddingTop = "36px";
+    // Change "Your Information" heading and placeholders
+    const h2 = document.querySelector("#panel-2 h2");
+    if (h2) h2.textContent = "Customer Information";
+    const nameInput = document.getElementById("inp-name");
+    if (nameInput) nameInput.placeholder = "Customer name";
+    const phoneInput = document.getElementById("inp-phone");
+    if (phoneInput) phoneInput.placeholder = "(xxx) xxx-xxxx";
+  }
 });
 
 async function loadClosedDates() {
@@ -378,7 +417,7 @@ function genSlots(totalDur) {
     const now = new Date();
     const selDate = new Date(S.date); selDate.setHours(0,0,0,0);
     const todayDate = new Date(); todayDate.setHours(0,0,0,0);
-    if (selDate.getTime() === todayDate.getTime()) {
+    if (!STAFF_MODE && selDate.getTime() === todayDate.getTime()) {
       cutoffMin = now.getHours() * 60 + now.getMinutes() + CFG.minBookAheadHours * 60;
     }
   }
@@ -513,6 +552,7 @@ function goToStep(n) {
       notes: document.getElementById("inp-notes").value.trim(),
     };
     // Check block nền — không chặn UI, server sẽ check lại lúc submit
+    if (!STAFF_MODE)
     fetch(CFG.SCRIPT_URL + "?action=checkBlock&phone=" + encodeURIComponent(phone) + "&email=" + encodeURIComponent(email))
       .then(r => r.json())
       .then(d => { if (d.blocked) { alert("We're unable to process your booking, please try another day."); goToStep(2); } })
