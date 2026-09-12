@@ -65,23 +65,55 @@ let closedPeriods = [];  // [{start:"2026-07-04", end:"2026-07-04", reason:"..."
 // ─────────────────────────────────────────
 //  BOOT
 // ─────────────────────────────────────────
-const STAFF_PIN  = "6303";   // last 4 digits of salon phone — change here to update
+const STAFF_PIN  = "6303";   // change here to update PIN
 let   STAFF_MODE = false;
 
-function checkStaffPin() {
-  const params = new URLSearchParams(window.location.search);
-  if (!params.has("staff")) return;
-  const pin = prompt("Enter staff PIN to continue:");
-  if (pin === STAFF_PIN) {
-    STAFF_MODE = true;
-  } else {
-    // Wrong or cancelled — strip ?staff from URL and reload as normal customer
-    params.delete("staff");
-    const newUrl = window.location.pathname + (params.toString() ? "?" + params.toString() : "");
-    window.history.replaceState({}, "", newUrl);
+function showStaffPinOverlay() {
+  // Full-screen overlay — blocks entire page until correct PIN entered
+  const overlay = document.createElement("div");
+  overlay.id = "staff-pin-overlay";
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:12px;padding:32px 28px;width:280px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.18)">
+      <div style="font-size:28px;margin-bottom:8px">🔑</div>
+      <div style="font-weight:700;font-size:16px;color:#1C3D35;margin-bottom:4px">Staff Access</div>
+      <div style="font-size:13px;color:#666;margin-bottom:18px">Enter PIN to continue</div>
+      <input id="staff-pin-input" type="password" inputmode="numeric" maxlength="8"
+        placeholder="PIN"
+        style="width:100%;box-sizing:border-box;padding:10px 14px;font-size:18px;text-align:center;border:2px solid #ccc;border-radius:8px;outline:none;letter-spacing:6px">
+      <div id="staff-pin-err" style="color:#c00;font-size:12px;margin-top:6px;min-height:16px"></div>
+      <button id="staff-pin-btn"
+        style="margin-top:12px;width:100%;padding:11px;background:#1C3D35;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer">
+        Enter
+      </button>
+      <div style="margin-top:14px">
+        <a href="/" style="font-size:12px;color:#999;text-decoration:none">← Back to booking</a>
+      </div>
+    </div>`;
+  Object.assign(overlay.style, {
+    position:"fixed", inset:"0", background:"rgba(0,0,0,.55)",
+    display:"flex", alignItems:"center", justifyContent:"center", zIndex:"99999"
+  });
+  document.body.appendChild(overlay);
+
+  const input = document.getElementById("staff-pin-input");
+  const btn   = document.getElementById("staff-pin-btn");
+  const err   = document.getElementById("staff-pin-err");
+
+  function tryPin() {
+    if (input.value === STAFF_PIN) {
+      STAFF_MODE = true;
+      overlay.remove();
+      activateStaffMode();
+    } else {
+      err.textContent = "Incorrect PIN. Try again.";
+      input.value = "";
+      input.focus();
+    }
   }
+  btn.addEventListener("click", tryPin);
+  input.addEventListener("keydown", e => { if (e.key === "Enter") tryPin(); });
+  setTimeout(() => input.focus(), 100);
 }
-checkStaffPin();
 
 document.addEventListener("DOMContentLoaded", () => {
   const params     = new URLSearchParams(window.location.search);
@@ -121,27 +153,121 @@ document.addEventListener("DOMContentLoaded", () => {
   loadClosedDates().then(() => renderCalendar());
   toggleCarrier();
 
-  if (STAFF_MODE) {
-    // Show staff-mode banner
-    const banner = document.createElement("div");
-    banner.id = "staff-banner";
-    banner.innerHTML = "🔑 Staff Mode — Booking for Customer";
-    Object.assign(banner.style, {
-      background:"#1C3D35", color:"#fff", textAlign:"center",
-      padding:"8px", fontSize:"13px", fontWeight:"600",
-      position:"fixed", top:"0", left:"0", right:"0", zIndex:"9999"
-    });
-    document.body.prepend(banner);
-    document.body.style.paddingTop = "36px";
-    // Change "Your Information" heading and placeholders
-    const h2 = document.querySelector("#panel-2 h2");
-    if (h2) h2.textContent = "Customer Information";
-    const nameInput = document.getElementById("inp-name");
-    if (nameInput) nameInput.placeholder = "Customer name";
-    const phoneInput = document.getElementById("inp-phone");
-    if (phoneInput) phoneInput.placeholder = "(xxx) xxx-xxxx";
-  }
+  // Show PIN overlay if ?staff param present; activateStaffMode() called after correct PIN
+  const needsStaff = new URLSearchParams(window.location.search).has("staff");
+  if (needsStaff) showStaffPinOverlay();
 });
+
+function activateStaffMode() {
+  const banner = document.createElement("div");
+  banner.id = "staff-banner";
+  banner.innerHTML = "🔑 Staff Mode — Booking for Customer";
+  Object.assign(banner.style, {
+    background:"#1C3D35", color:"#fff", textAlign:"center",
+    padding:"8px", fontSize:"13px", fontWeight:"600",
+    position:"fixed", top:"0", left:"0", right:"0", zIndex:"9999"
+  });
+  document.body.prepend(banner);
+  document.body.style.paddingTop = "36px";
+  const h2 = document.querySelector("#panel-2 h2");
+  if (h2) h2.textContent = "Customer Information";
+  const nameInput = document.getElementById("inp-name");
+  if (nameInput) nameInput.placeholder = "Customer name";
+  const phoneInput = document.getElementById("inp-phone");
+  if (phoneInput) phoneInput.placeholder = "(xxx) xxx-xxxx";
+
+  // Load past customers for autocomplete
+  fetch(CFG.SCRIPT_URL + "?action=customers")
+    .then(r => r.json())
+    .then(d => { if (d.customers) setupStaffAutocomplete(d.customers); })
+    .catch(() => {});
+}
+
+function setupStaffAutocomplete(customers) {
+  // Inject autocomplete styles
+  const style = document.createElement("style");
+  style.textContent = `
+    .staff-ac-wrap { position:relative; }
+    .staff-ac-list {
+      position:absolute; top:100%; left:0; right:0; z-index:9998;
+      background:#fff; border:1px solid #b2cfc9; border-top:none;
+      border-radius:0 0 8px 8px; max-height:220px; overflow-y:auto;
+      box-shadow:0 4px 12px rgba(0,0,0,.12);
+    }
+    .staff-ac-item {
+      padding:9px 14px; cursor:pointer; border-bottom:1px solid #f0f4f3;
+      font-size:14px;
+    }
+    .staff-ac-item:last-child { border-bottom:none; }
+    .staff-ac-item:hover, .staff-ac-item.ac-active { background:#e8f4f0; }
+    .staff-ac-item .ac-name { font-weight:600; color:#1C3D35; }
+    .staff-ac-item .ac-phone { color:#666; font-size:12px; margin-left:8px; }
+    .staff-ac-item .ac-visits { color:#aaa; font-size:11px; float:right; }
+  `;
+  document.head.appendChild(style);
+
+  function wrapInput(inputEl) {
+    const wrap = document.createElement("div");
+    wrap.className = "staff-ac-wrap";
+    inputEl.parentNode.insertBefore(wrap, inputEl);
+    wrap.appendChild(inputEl);
+    return wrap;
+  }
+
+  function makeDropdown(wrap) {
+    let list = wrap.querySelector(".staff-ac-list");
+    if (!list) { list = document.createElement("div"); list.className = "staff-ac-list"; wrap.appendChild(list); }
+    return list;
+  }
+
+  function fillCustomer(c) {
+    const fmt = c.phone.replace(/(\d{3})(\d{3})(\d{4})/, "($1) $2-$3");
+    document.getElementById("inp-name").value  = c.name;
+    document.getElementById("inp-phone").value = fmt;
+    if (c.email) document.getElementById("inp-email").value = c.email;
+    document.querySelectorAll(".staff-ac-list").forEach(l => l.innerHTML = "");
+  }
+
+  function showSuggestions(wrap, matches) {
+    const list = makeDropdown(wrap);
+    list.innerHTML = "";
+    matches.slice(0, 8).forEach((c, idx) => {
+      const item = document.createElement("div");
+      item.className = "staff-ac-item";
+      const fmt = c.phone.replace(/(\d{3})(\d{3})(\d{4})/, "($1) $2-$3");
+      item.innerHTML = `<span class="ac-name">${c.name}</span><span class="ac-phone">${fmt}</span><span class="ac-visits">${c.visits}×</span>`;
+      item.addEventListener("mousedown", e => { e.preventDefault(); fillCustomer(c); });
+      list.appendChild(item);
+    });
+  }
+
+  // Wire up name field
+  const nameEl  = document.getElementById("inp-name");
+  const phoneEl = document.getElementById("inp-phone");
+  const nameWrap  = wrapInput(nameEl);
+  const phoneWrap = wrapInput(phoneEl);
+
+  nameEl.addEventListener("input", () => {
+    const q = nameEl.value.trim().toLowerCase();
+    if (!q) { makeDropdown(nameWrap).innerHTML = ""; return; }
+    const matches = customers.filter(c => c.name.toLowerCase().includes(q));
+    showSuggestions(nameWrap, matches);
+  });
+
+  phoneEl.addEventListener("input", () => {
+    const q = phoneEl.value.replace(/\D/g, "");
+    if (q.length < 3) { makeDropdown(phoneWrap).innerHTML = ""; return; }
+    const matches = customers.filter(c => c.phone.includes(q));
+    showSuggestions(phoneWrap, matches);
+  });
+
+  // Hide dropdown on blur
+  [nameEl, phoneEl].forEach(el => {
+    el.addEventListener("blur", () => setTimeout(() => {
+      document.querySelectorAll(".staff-ac-list").forEach(l => l.innerHTML = "");
+    }, 150));
+  });
+}
 
 async function loadClosedDates() {
   try {
