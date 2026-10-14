@@ -181,6 +181,14 @@ function activateStaffMode() {
   const phoneInput = document.getElementById("inp-phone");
   if (phoneInput) phoneInput.placeholder = "(xxx) xxx-xxxx";
 
+  // Trong staff mode: luôn hiện carrier dropdown (tiệm biết nhà mạng khách)
+  const carrierGrp = document.getElementById("carrier-group");
+  if (carrierGrp) {
+    carrierGrp.style.display = "block";
+    const lbl = carrierGrp.querySelector("label");
+    if (lbl) lbl.innerHTML = 'Mobile Carrier <span class="opt">(nhà mạng của khách)</span>';
+  }
+
   // Load past customers for autocomplete
   fetch(CFG.SCRIPT_URL + "?action=customers")
     .then(r => r.json())
@@ -230,6 +238,14 @@ function setupStaffAutocomplete(customers) {
     document.getElementById("inp-name").value  = c.name;
     document.getElementById("inp-phone").value = fmt;
     if (c.email) document.getElementById("inp-email").value = c.email;
+    // Điền nhà mạng nếu đã biết từ lần trước
+    const carrierEl = document.getElementById("inp-carrier");
+    const carrierGrp = document.getElementById("carrier-group");
+    if (carrierEl && c.carrier) {
+      carrierEl.value = c.carrier;
+      if (carrierGrp) carrierGrp.style.display = "block";
+    }
+    toggleCarrier();
     document.querySelectorAll(".staff-ac-list").forEach(l => l.innerHTML = "");
   }
 
