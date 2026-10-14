@@ -121,12 +121,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const declineId  = params.get("decline");
   const rescheduleId = params.get("reschedule");
   const doneId     = params.get("done");
+  const noshowId   = params.get("noshow");
 
-  if (cancelId || declineId || rescheduleId || doneId) {
+  if (cancelId || declineId || rescheduleId || doneId || noshowId) {
     document.querySelector(".steps").style.display = "none";
     document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
 
-    if (doneId) {
+    if (noshowId) {
+      document.getElementById("panel-noshow").classList.add("active");
+      document.getElementById("noshow-ref-display").textContent = "Booking ref: " + noshowId;
+      window._noshowId = noshowId;
+    } else if (doneId) {
       document.getElementById("panel-done").classList.add("active");
       document.getElementById("done-ref-display").textContent = "Booking ref: " + doneId;
       window._doneId = doneId;
@@ -830,6 +835,39 @@ async function performDone() {
     alert("Connection error. Please try again.");
     btn.disabled = false;
     btn.textContent = "✅ Yes, Done";
+  }
+}
+
+// ─────────────────────────────────────────
+//  NO-SHOW (salon only — customer didn't arrive)
+// ─────────────────────────────────────────
+async function performNoShow() {
+  const bookingId = window._noshowId;
+  const btn = document.getElementById("btn-do-noshow");
+  btn.disabled = true;
+  btn.textContent = "Processing…";
+
+  try {
+    const r    = await fetch(`${CFG.SCRIPT_URL}?action=noshow&bookingId=${encodeURIComponent(bookingId)}`);
+    const data = await r.json();
+
+    if (data.success) {
+      document.getElementById("panel-noshow").innerHTML = `
+        <div class="success-icon" style="background:#6a1b9a">🚫</div>
+        <h2 style="color:#6a1b9a;text-align:center">Marked as No-Show</h2>
+        <p style="text-align:center;color:var(--text-light)">
+          <strong>${data.name || ""}</strong>'s slot on ${data.date || ""} at ${data.time || ""}<br>
+          has been freed up for new bookings.
+        </p>`;
+    } else {
+      alert(data.message || "Unable to mark no-show. Please try again.");
+      btn.disabled = false;
+      btn.textContent = "🚫 Yes, No-Show";
+    }
+  } catch (e) {
+    alert("Connection error. Please try again.");
+    btn.disabled = false;
+    btn.textContent = "🚫 Yes, No-Show";
   }
 }
 

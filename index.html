@@ -135,6 +135,21 @@
       </div>
     </div>
 
+    <!-- PANEL NO-SHOW (salon only — customer didn't arrive) -->
+    <div class="panel" id="panel-noshow">
+      <div class="success-icon" style="background:#6a1b9a">🚫</div>
+      <h2 style="color:#6a1b9a;text-align:center">Mark as No-Show?</h2>
+      <p style="text-align:center;color:var(--text-light);margin-bottom:8px">
+        Customer didn't arrive? Tap below to release the slot so you can take another client.
+      </p>
+      <p id="noshow-ref-display" style="text-align:center;font-size:.8rem;color:#bbb;margin-bottom:28px"></p>
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="location.href=location.pathname">← Go Back</button>
+        <button class="btn-confirm" id="btn-do-noshow" style="background:#6a1b9a;border-color:#6a1b9a"
+                onclick="performNoShow()">🚫 Yes, No-Show</button>
+      </div>
+    </div>
+
     <!-- PANEL DONE (salon only — finished client early) -->
     <div class="panel" id="panel-done">
       <div class="success-icon" style="background:#2e7d32">✅</div>
